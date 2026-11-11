@@ -35,17 +35,20 @@ type serviceFields struct {
 	Server     string
 	Profile    string
 	RootFolder string
+	// StorageGroup is the group select that replaces RootFolder while
+	// storage groups are on.
+	StorageGroup string
 }
 
 // keys lists the service's config keys in form order.
 func (f serviceFields) keys() []string {
-	return []string{f.Server, f.Profile, f.RootFolder}
+	return []string{f.Server, f.Profile, f.RootFolder, f.StorageGroup}
 }
 
 // services lists every service kind's destination keys, in form order.
 var services = []serviceFields{
-	{seerr.ServiceRadarr, keyRadarrServer, keyRadarrProfile, keyRadarrRootFolder},
-	{seerr.ServiceSonarr, keySonarrServer, keySonarrProfile, keySonarrRootFolder},
+	{seerr.ServiceRadarr, keyRadarrServer, keyRadarrProfile, keyRadarrRootFolder, keyRadarrStorageGroup},
+	{seerr.ServiceSonarr, keySonarrServer, keySonarrProfile, keySonarrRootFolder, keySonarrStorageGroup},
 }
 
 // serviceFor returns the destination keys for a Seerr media type
@@ -71,6 +74,10 @@ type Connection struct {
 	// Destination holds the raw destination values, keyed by config key.
 	// Absent, empty or "default" means Seerr's own choice.
 	Destination map[string]any
+
+	// Storage holds the storage groups, which choose the root folder while
+	// they are on.
+	Storage storageConfig
 }
 
 // connectionFromRouter parses a host-supplied RouterConnection. base_url and
@@ -82,6 +89,7 @@ func connectionFromRouter(c *pluginv1.RouterConnection) Connection {
 		BaseURL:     c.GetBaseUrl(),
 		APIKey:      c.GetApiKey(),
 		Destination: map[string]any{},
+		Storage:     storageFromConfig(nil),
 	}
 	if cfg := c.GetConfig(); cfg != nil {
 		m := cfg.AsMap()
@@ -90,6 +98,7 @@ func connectionFromRouter(c *pluginv1.RouterConnection) Connection {
 		}
 		conn.RequireMappedUser, _ = m["require_mapped_user"].(bool)
 		conn.AutoApprove, _ = m["auto_approve"].(bool)
+		conn.Storage = storageFromConfig(m)
 		for _, f := range services {
 			for _, key := range f.keys() {
 				if v, ok := m[key]; ok {

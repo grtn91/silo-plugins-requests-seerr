@@ -15,6 +15,9 @@ these plugin settings:
 - **Movies** and **Series**: the Radarr or Sonarr server, quality profile and
   root folder requests get. See
   [Choosing the server, quality profile and root folder](#choosing-the-server-quality-profile-and-root-folder).
+- **Storage groups** (`storage_groups_enabled`): let the plugin choose the
+  root folder by free space, from named groups of folders. See
+  [Storage groups](#storage-groups).
 
 ## API key requirement
 
@@ -137,6 +140,58 @@ override who chooses, like any other select.
   request options, use the connection's settings.
 - To let only some people choose, or to choose for them, use routing rules on
   the requesting account instead.
+
+## Storage groups
+
+A root folder setting sends every request to one folder. With several disks
+you usually want requests to go where there is room. Turn on **Use storage
+groups** and the plugin chooses the root folder of each request itself.
+
+A storage group is a named list of root folders with a rule for choosing among
+them. The form starts with one group, and **Add storage group** adds the
+next, up to eight. A group without folders is unused, and an empty group at
+the end is gone the next time the form opens. On a Silo server that does not
+know the add button, all eight groups are shown.
+
+| Setting | Key | Meaning |
+| --- | --- | --- |
+| Use storage groups | `storage_groups_enabled` | Shows the group sections and replaces both root folder settings with a storage group setting. |
+| Minimum free space (GB) | `storage_min_free_gb` | A folder with less free space counts as full. Default 50. |
+| Name | `storage_group_N_name` | For example Main storage, External storage, Fallback. |
+| Radarr folders, Sonarr folders | `storage_group_N_radarr_folders`, `storage_group_N_sonarr_folders` | The group's root folders for movies and for series. |
+| Choose a folder | `storage_group_N_mode` | **In order** fills the first folder, then the next. **Most free space** sends each request to the folder with the most room. |
+| Storage group (movies / series) | `radarr_storage_group`, `sonarr_storage_group` | **Automatic** starts at group 1. A named group starts there instead. |
+
+How a folder is chosen for a request:
+
+1. The plugin reads the free space of the Radarr or Sonarr server's root
+   folders from Seerr.
+2. It starts at group 1, or at the group picked in the storage group setting,
+   and takes a folder of that group with at least the minimum free space.
+3. If the group has none, the next group is tried, and so on. A picked group
+   never falls back to an earlier one.
+4. If no group has room, the request fails with a message that says so. It is
+   not sent to Seerr's default folder.
+
+Things to know:
+
+- The folder lists come from the server chosen under Movies and Series. Test
+  the connection after changing a server or a group to reload the lists.
+- A media type that no group has folders for keeps Seerr's default folder.
+- A group folder the server no longer has is skipped for requests, and is
+  reported when you save or test the connection.
+- A Silo routing rule can set the storage group, for example to send anime to
+  External storage.
+- The groups can be put in another order with the arrows in each group's
+  header. A picked group is stored by its name, so the pick follows the group.
+  Renaming a group means picking it again, and two groups cannot share a name.
+  A group without a name is stored by its position.
+- While groups are on, nobody picks a folder for a single request: the
+  **chosen by** select for the root folder is hidden, and neither requesters
+  nor an approving admin are offered a folder or a group. The quality profile
+  can still be left to them.
+- Free space is read when the request is submitted. The plugin does not know a
+  title's size, so set the minimum high enough for your largest downloads.
 
 ## Download progress
 

@@ -339,6 +339,11 @@ func TestListConfigOptionsListsServersProfilesAndFolders(t *testing.T) {
 		"sonarr_profile_id":  "default=Seerr default (Archive)|7=Archive|8=Archive UHD",
 		"sonarr_root_folder": "default=Seerr default (/archive)|/archive=/archive",
 	}
+	// Every storage group slot lists the server's folders, without a default.
+	for slot := 1; slot <= storageGroupSlots; slot++ {
+		want[groupFoldersKey(slot, "radarr")] = "/movies=/movies (50 GB free)|/movies-uhd=/movies-uhd (2.0 TB free)|/tv=/tv"
+		want[groupFoldersKey(slot, "sonarr")] = "/archive=/archive"
+	}
 	if len(resp.GetOptionsByField()) != len(want) {
 		t.Fatalf("fields: got %v", resp.GetOptionsByField())
 	}
