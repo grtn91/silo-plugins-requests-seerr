@@ -73,27 +73,30 @@ func (l *serverLister) get(ctx context.Context, kind string, id int) (*seerr.Ser
 	return r.details, r.err
 }
 
-// checkServer reports whether id names a standard (not 4K) server of the
-// field's kind. Seerr sends a request for an unknown id, or for a 4K server,
-// to its default server without saying so, so both are refused here.
+// checkServer reports whether id names a server of the field's kind and
+// tier. Seerr sends a request for an unknown id, or for a server of the other
+// tier, to its default server without saying so, so both are refused here.
 func checkServer(servers []seerr.Server, f serviceFields, id int) error {
 	for _, s := range servers {
 		if s.ID != id {
 			continue
 		}
-		if s.Is4K {
-			return fmt.Errorf("%s is set to Seerr's %s server %q (id %d), which Seerr marks as a 4K server; requests are standard requests, so pick a server that is not marked 4K", f.Server, kindLabel(f.Kind), s.Name, id)
+		switch {
+		case s.Is4K && !f.Is4K:
+			return fmt.Errorf("%s is set to Seerr's %s server %q (id %d), which Seerr marks as a 4K server; it takes standard requests, so pick a server that is not marked 4K", f.Server, kindLabel(f.Kind), s.Name, id)
+		case !s.Is4K && f.Is4K:
+			return fmt.Errorf("%s is set to Seerr's %s server %q (id %d), which Seerr does not mark as a 4K server; it takes 4K requests, so pick a server that is marked 4K", f.Server, kindLabel(f.Kind), s.Name, id)
 		}
 		return nil
 	}
 	return fmt.Errorf("%s is set to %s server id %d, which Seerr does not have", f.Server, kindLabel(f.Kind), id)
 }
 
-// defaultServer returns the server Seerr sends a standard request to when the
-// request names none.
-func defaultServer(servers []seerr.Server) *seerr.Server {
+// defaultServer returns the server Seerr sends a request of the tier to when
+// the request names none.
+func defaultServer(servers []seerr.Server, is4k bool) *seerr.Server {
 	for i := range servers {
-		if servers[i].IsDefault && !servers[i].Is4K {
+		if servers[i].IsDefault && servers[i].Is4K == is4k {
 			return &servers[i]
 		}
 	}
@@ -152,7 +155,10 @@ func (c destinationCheck) message(f serviceFields) string {
 // folder from that server's free space and the root folder select is ignored.
 func checkDestination(ctx context.Context, l *serverLister, conn Connection, f serviceFields, checkSeerr bool) destinationCheck {
 	c := destinationCheck{fieldErrs: map[string]string{}, unreachable: map[string]string{}, storageErrs: map[string]string{}}
-	grouped := conn.Storage.manages(f.Kind)
+	// Storage groups hold the folders of the standard servers; a 4K request
+	// keeps its own root folder setting.
+	storageOn := conn.Storage.Enabled && !f.Is4K
+	grouped := storageOn && conn.Storage.manages(f.Kind)
 	// folderKey is the key folder problems are reported under.
 	folderKey, startSlot, badStart := f.RootFolder, 0, false
 	var err error
@@ -168,7 +174,7 @@ func checkDestination(ctx context.Context, l *serverLister, conn Connection, f s
 			c.fieldErrs[f.StorageGroup] = fmt.Sprintf("%s: %v", f.StorageGroup, err)
 			badStart = true
 		}
-	} else if conn.Storage.Enabled {
+	} else if storageOn {
 		// No group covers this service, so Seerr keeps its own folder. The
 		// root folder select is hidden, and a value left in it is not used.
 	} else if c.dest.RootFolder, err = conn.RootFolder(f.RootFolder); err != nil {
@@ -209,13 +215,13 @@ func checkDestination(ctx context.Context, l *serverLister, conn Connection, f s
 			}
 		}
 	} else {
-		target = defaultServer(servers)
+		target = defaultServer(servers, f.Is4K)
 	}
 	if !wantsOptions {
 		return c
 	}
 	if target == nil {
-		why := fmt.Sprintf("%%s is set, but Seerr has no default %s server to take it from; pick one in %s", label, f.Server)
+		why := fmt.Sprintf("%%s is set, but Seerr has no default %s server for this tier to take it from; pick one in %s", label, f.Server)
 		if c.dest.ProfileID != nil {
 			c.fieldErrs[f.Profile] = fmt.Sprintf(why, f.Profile)
 		}
@@ -278,7 +284,7 @@ func hasRootFolder(folders []seerr.RootFolder, path string) bool {
 
 // destinationOptions builds the dynamic options for every destination field
 // from Seerr. Each list starts with "default", named after what Seerr would
-// use when it can be told. Server lists hold only standard servers. Profile
+// use when it can be told. A server list holds only servers of its tier. Profile
 // and folder lists come from the server picked in conn, or Seerr's default
 // when none (or an unusable one) is picked. A field whose choices cannot be
 // read is left out, so the form falls back to its static "Seerr default"
@@ -286,12 +292,13 @@ func hasRootFolder(folders []seerr.RootFolder, path string) bool {
 // instead of its root folder select.
 func destinationOptions(ctx context.Context, l *serverLister, conn Connection) map[string]*pluginv1.ConfigOptionList {
 	out := map[string]*pluginv1.ConfigOptionList{}
-	for _, f := range services {
+	// The 4K selects are hidden without a separate 4K server.
+	for _, f := range servicesOf(conn) {
 		servers, err := l.list(ctx, f.Kind)
 		if err != nil {
 			continue
 		}
-		def := defaultServer(servers)
+		def := defaultServer(servers, f.Is4K)
 		target := def
 		defName := ""
 		if def != nil {
@@ -300,7 +307,7 @@ func destinationOptions(ctx context.Context, l *serverLister, conn Connection) m
 		serverOpts := []*pluginv1.ConfigOption{{Value: seerrDefault, Label: defaultLabel(defName)}}
 		picked, _ := conn.ServerID(f.Server)
 		for i, s := range servers {
-			if s.Is4K {
+			if s.Is4K != f.Is4K {
 				continue
 			}
 			serverOpts = append(serverOpts, &pluginv1.ConfigOption{Value: itoa(s.ID), Label: s.Name})
@@ -337,6 +344,12 @@ func destinationOptions(ctx context.Context, l *serverLister, conn Connection) m
 			opt := &pluginv1.ConfigOption{Value: rf.Path, Label: folderLabel(rf)}
 			folderOpts = append(folderOpts, opt)
 			groupFolderOpts = append(groupFolderOpts, opt)
+		}
+		if f.Is4K {
+			// Storage groups hold the folders of the standard servers; a 4K
+			// request keeps its own root folder select.
+			out[f.RootFolder] = &pluginv1.ConfigOptionList{Options: folderOpts}
+			continue
 		}
 		// A storage group's folders are always listed, so groups can be
 		// filled in before they are switched on.
@@ -384,7 +397,8 @@ func configuredDestinationErrors(ctx context.Context, l *serverLister, conn Conn
 		fieldErrs[key] = conn.Storage.Errs[key]
 		invalid = append(invalid, conn.Storage.Errs[key])
 	}
-	for _, f := range services {
+	// The 4K fields are hidden, and not used, without a separate 4K server.
+	for _, f := range servicesOf(conn) {
 		c := checkDestination(ctx, l, conn, f, checkSeerr)
 		for slot := 1; slot <= storageGroupSlots; slot++ {
 			if m, ok := c.storageErrs[groupFoldersKey(slot, f.Kind)]; ok {

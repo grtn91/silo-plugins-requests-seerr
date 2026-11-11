@@ -239,3 +239,19 @@ func TestTestConnectionReportsFullStorageGroups(t *testing.T) {
 		t.Fatalf("want a connected-but-full failure, got %+v", resp)
 	}
 }
+
+// Storage groups hold the standard servers' folders, so with a separate 4K
+// server only the standard request takes a folder from them.
+func TestStorageGroupsLeave4KRequestAlone(t *testing.T) {
+	stub := &multiServerSeerr{}
+	resp := fulfill(t, "movie", hdUHD, serverConn(t, newMultiServerSeerr(t, stub), groupedConfig(map[string]any{"supports_4k": true})))
+	if len(resp.GetTargets()) != 2 || len(stub.bodies) != 2 {
+		t.Fatalf("want two requests: targets=%v bodies=%v", resp.GetTargets(), stub.bodies)
+	}
+	if stub.bodies[0]["is4k"] != false || stub.bodies[0]["rootFolder"] != "/movies-uhd" {
+		t.Fatalf("standard request: %+v", stub.bodies[0])
+	}
+	if _, set := stub.bodies[1]["rootFolder"]; stub.bodies[1]["is4k"] != true || set {
+		t.Fatalf("4K request must keep Seerr's folder: %+v", stub.bodies[1])
+	}
+}
