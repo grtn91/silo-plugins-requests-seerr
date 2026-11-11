@@ -170,7 +170,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -178,14 +178,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_1_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -193,14 +194,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_1_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",
@@ -243,7 +245,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -251,14 +253,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_2_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -266,14 +269,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_2_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",
@@ -316,7 +320,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -324,14 +328,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_3_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -339,14 +344,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_3_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",
@@ -389,7 +395,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -397,14 +403,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_4_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -412,14 +419,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_4_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",
@@ -462,7 +470,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -470,14 +478,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_5_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -485,14 +494,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_5_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",
@@ -535,7 +545,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -543,14 +553,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_6_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -558,14 +569,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_6_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",
@@ -608,7 +620,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -616,14 +628,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_7_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -631,14 +644,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_7_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",
@@ -681,7 +695,7 @@
                 "label": "Radarr folders (movies)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Radarr root folders in this group, kept in the order you select them. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
+                "description": "The Radarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Radarr server chosen under Movies; test the connection to load them. Leave empty if this group holds no movies.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -689,14 +703,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_8_sonarr_folders",
                 "label": "Sonarr folders (series)",
                 "control": "ADMIN_FORM_CONTROL_MULTI_SELECT",
                 "dynamic_options": true,
-                "description": "The Sonarr root folders in this group, kept in the order you select them. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
+                "description": "The Sonarr root folders in this group. Add a folder with its button, and drag the folders into the order they should be filled in. They are the folders of the Sonarr server chosen under Series; test the connection to load them. Leave empty if this group holds no series.",
                 "show_when": [
                   {
                     "field": "storage_groups_enabled",
@@ -704,14 +719,15 @@
                       "true"
                     ]
                   }
-                ]
+                ],
+                "ordered": true
               },
               {
                 "key": "storage_group_8_mode",
                 "label": "Choose a folder",
                 "control": "ADMIN_FORM_CONTROL_SELECT",
                 "default_value": "in_order",
-                "description": "In order: fill the first folder until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
+                "description": "In order: fill the first folder of the list until it is full, then the next. Most free space: each request goes to the folder with the most free space, which spreads requests over the folders.",
                 "options": [
                   {
                     "value": "in_order",

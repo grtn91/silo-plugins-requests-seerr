@@ -133,6 +133,28 @@ func TestStorageGroupForm(t *testing.T) {
 	// Silo's rule editor lists every select and multi-select a server's form
 	// shows, and checks a field's own show_when only. So each field carries
 	// the condition, not just its section.
+	// "In order" fills a group's folders by their place in the list, so the
+	// folder lists say that their order matters.
+	var rawForm struct {
+		Capabilities []struct {
+			ConfigSchema []struct {
+				AdminForm struct {
+					Fields []struct {
+						Key     string `json:"key"`
+						Ordered bool   `json:"ordered"`
+					} `json:"fields"`
+				} `json:"admin_form"`
+			} `json:"config_schema"`
+		} `json:"capabilities"`
+	}
+	if err := json.Unmarshal(manifestJSON, &rawForm); err != nil {
+		t.Fatalf("manifest JSON: %v", err)
+	}
+	for _, f := range rawForm.Capabilities[0].ConfigSchema[0].AdminForm.Fields {
+		if strings.HasSuffix(f.Key, "_folders") != f.Ordered {
+			t.Fatalf("%s: ordered=%v, want it set on the group folder lists only", f.Key, f.Ordered)
+		}
+	}
 	on := []string{"storage_min_free_gb", "radarr_storage_group", "sonarr_storage_group"}
 	for slot := 1; slot <= 8; slot++ {
 		for _, suffix := range []string{"name", "radarr_folders", "sonarr_folders", "mode"} {

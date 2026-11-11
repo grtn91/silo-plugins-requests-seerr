@@ -149,16 +149,17 @@ groups** and the plugin chooses the root folder of each request itself.
 
 A storage group is a named list of root folders with a rule for choosing among
 them. The form starts with one group, and **Add storage group** adds the
-next, up to eight. A group without folders is unused, and an empty group at
-the end is gone the next time the form opens. On a Silo server that does not
-know the add button, all eight groups are shown.
+next, up to eight. The bin in a group's header deletes it, and the groups after
+it move up. A group without folders is unused. On a Silo server that does not
+know these list controls, all eight groups are shown and a group's folders
+keep the order they were selected in.
 
 | Setting | Key | Meaning |
 | --- | --- | --- |
 | Use storage groups | `storage_groups_enabled` | Shows the group sections and replaces both root folder settings with a storage group setting. |
 | Minimum free space (GB) | `storage_min_free_gb` | A folder with less free space counts as full. Default 50. |
 | Name | `storage_group_N_name` | For example Main storage, External storage, Fallback. |
-| Radarr folders, Sonarr folders | `storage_group_N_radarr_folders`, `storage_group_N_sonarr_folders` | The group's root folders for movies and for series. |
+| Radarr folders, Sonarr folders | `storage_group_N_radarr_folders`, `storage_group_N_sonarr_folders` | The group's root folders for movies and for series. Drag them into the order they should be filled in. |
 | Choose a folder | `storage_group_N_mode` | **In order** fills the first folder, then the next. **Most free space** sends each request to the folder with the most room. |
 | Storage group (movies / series) | `radarr_storage_group`, `sonarr_storage_group` | **Automatic** starts at group 1. A named group starts there instead. |
 
