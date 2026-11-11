@@ -139,6 +139,9 @@ func (s *Server) Fulfill(ctx context.Context, req *pluginv1.FulfillRequest) (*pl
 				// destination, and sending elsewhere would hide the mistake.
 				t = &pluginv1.FulfillmentTarget{Status: "failed", Message: msg}
 			} else {
+				if check.group != "" {
+					log.Printf("seerr: storage group %q puts tmdb %d in %s", check.group, tmdbID, check.dest.RootFolder)
+				}
 				t = s.fulfillOne(ctx, client, mediaType, tmdbID, userID, is4k, check.dest)
 			}
 			t.ConnectionId = conn.ID

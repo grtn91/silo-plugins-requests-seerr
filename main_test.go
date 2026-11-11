@@ -96,6 +96,8 @@ func TestEmbeddedManifestLoads(t *testing.T) {
 		t.Fatalf("manifest JSON: %v", err)
 	}
 	options := raw.Capabilities[0].RequestRouter.RequesterOptions
+	// The storage group select is not among them: while storage groups are
+	// on they decide the folder, and nobody picks one per request.
 	if len(options) != 4 {
 		t.Fatalf("requester_options: want 4, got %d", len(options))
 	}
@@ -115,4 +117,90 @@ func TestEmbeddedManifestLoads(t *testing.T) {
 		}
 	}
 
+}
+
+// The storage group form: one switch reveals the group sections and swaps
+// each root folder select for a group select.
+func TestStorageGroupForm(t *testing.T) {
+	m, err := publicmanifest.LoadWithChecksum(manifestJSON, version)
+	if err != nil {
+		t.Fatalf("LoadWithChecksum: %v", err)
+	}
+	form := m.GetCapabilities()[0].GetConfigSchema()[0].GetAdminForm()
+	shownWhen := map[string]string{}
+	controls := map[string]string{}
+	for _, f := range form.GetFields() {
+		controls[f.GetKey()] = f.GetControl().String()
+		for _, c := range f.GetShowWhen() {
+			if c.GetField() == "storage_groups_enabled" {
+				shownWhen[f.GetKey()] = strings.Join(c.GetEquals(), ",")
+			}
+		}
+	}
+	if controls["storage_groups_enabled"] != "ADMIN_FORM_CONTROL_SWITCH" {
+		t.Fatalf("storage_groups_enabled: want a switch, got %q", controls["storage_groups_enabled"])
+	}
+	// Silo's rule editor lists every select and multi-select a server's form
+	// shows, and checks a field's own show_when only. So each field carries
+	// the condition, not just its section.
+	// "In order" fills a group's folders by their place in the list, so the
+	// folder lists say that their order matters.
+	var rawForm struct {
+		Capabilities []struct {
+			ConfigSchema []struct {
+				AdminForm struct {
+					Fields []struct {
+						Key     string `json:"key"`
+						Ordered bool   `json:"ordered"`
+					} `json:"fields"`
+				} `json:"admin_form"`
+			} `json:"config_schema"`
+		} `json:"capabilities"`
+	}
+	if err := json.Unmarshal(manifestJSON, &rawForm); err != nil {
+		t.Fatalf("manifest JSON: %v", err)
+	}
+	for _, f := range rawForm.Capabilities[0].ConfigSchema[0].AdminForm.Fields {
+		if strings.HasSuffix(f.Key, "_folders") != f.Ordered {
+			t.Fatalf("%s: ordered=%v, want it set on the group folder lists only", f.Key, f.Ordered)
+		}
+	}
+	on := []string{"storage_min_free_gb", "radarr_storage_group", "sonarr_storage_group"}
+	for slot := 1; slot <= 8; slot++ {
+		for _, suffix := range []string{"name", "radarr_folders", "sonarr_folders", "mode"} {
+			on = append(on, "storage_group_"+string(rune('0'+slot))+"_"+suffix)
+		}
+	}
+	for _, key := range on {
+		if controls[key] == "" || shownWhen[key] != "true" {
+			t.Fatalf("%s: want a field shown only while storage groups are on (control %q, shown when %q)", key, controls[key], shownWhen[key])
+		}
+	}
+	for _, key := range []string{"radarr_root_folder", "sonarr_root_folder", "radarr_folder_chosen_by", "sonarr_folder_chosen_by"} {
+		if shownWhen[key] != "false" {
+			t.Fatalf("%s: want it hidden while storage groups are on", key)
+		}
+	}
+	// Every field sits in a section, and the group sections appear with the switch.
+	inSection := map[string]bool{}
+	groupSections := 0
+	for _, s := range form.GetSections() {
+		for _, key := range s.GetFieldKeys() {
+			inSection[key] = true
+		}
+		if strings.HasPrefix(s.GetKey(), "storage_group_") {
+			if len(s.GetShowWhen()) != 1 {
+				t.Fatalf("section %s: want it shown only while storage groups are on", s.GetKey())
+			}
+			groupSections++
+		}
+	}
+	if groupSections != 8 {
+		t.Fatalf("want 8 storage group sections, got %d", groupSections)
+	}
+	for key := range controls {
+		if !inSection[key] {
+			t.Fatalf("%s is in no section", key)
+		}
+	}
 }

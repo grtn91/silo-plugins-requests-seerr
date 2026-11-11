@@ -3,6 +3,8 @@ package router
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -117,6 +119,15 @@ type destinationCheck struct {
 	fieldErrs map[string]string
 	// unreachable holds why Seerr could not be asked about a value.
 	unreachable map[string]string
+	// storageErrs holds what is wrong with the storage group settings. They
+	// are reported when the settings are saved or tested. A request goes
+	// ahead without them: a group folder the server lost is skipped.
+	storageErrs map[string]string
+	// group names the storage group the folder was chosen from, when one was.
+	group string
+	// full says that no storage group folder has room. It fails a request
+	// and a connection test, and does not block saving.
+	full string
 }
 
 // message joins everything wrong, in form order; empty when the destination
@@ -130,6 +141,9 @@ func (c destinationCheck) message(f serviceFields) string {
 			out = append(out, m)
 		}
 	}
+	if c.full != "" {
+		out = append(out, c.full)
+	}
 	return strings.Join(out, "; ")
 }
 
@@ -137,9 +151,16 @@ func (c destinationCheck) message(f serviceFields) string {
 // not ids or paths are always reported. When checkSeerr is set, the server
 // must be one of Seerr's standard servers of the kind, and the profile and
 // folder must exist on the server the request will go to: the chosen one, or
-// Seerr's default.
+// Seerr's default. While storage groups cover the service, they choose the
+// folder from that server's free space and the root folder select is ignored.
 func checkDestination(ctx context.Context, l *serverLister, conn Connection, f serviceFields, checkSeerr bool) destinationCheck {
-	c := destinationCheck{fieldErrs: map[string]string{}, unreachable: map[string]string{}}
+	c := destinationCheck{fieldErrs: map[string]string{}, unreachable: map[string]string{}, storageErrs: map[string]string{}}
+	// Storage groups hold the folders of the standard servers; a 4K request
+	// keeps its own root folder setting.
+	storageOn := conn.Storage.Enabled && !f.Is4K
+	grouped := storageOn && conn.Storage.manages(f.Kind)
+	// folderKey is the key folder problems are reported under.
+	folderKey, startSlot, badStart := f.RootFolder, 0, false
 	var err error
 	if c.dest.ServerID, err = conn.ServerID(f.Server); err != nil {
 		c.fieldErrs[f.Server] = fmt.Sprintf("%s: %v", f.Server, err)
@@ -147,10 +168,20 @@ func checkDestination(ctx context.Context, l *serverLister, conn Connection, f s
 	if c.dest.ProfileID, err = conn.ProfileID(f.Profile); err != nil {
 		c.fieldErrs[f.Profile] = fmt.Sprintf("%s: %v", f.Profile, err)
 	}
-	if c.dest.RootFolder, err = conn.RootFolder(f.RootFolder); err != nil {
+	if grouped {
+		folderKey = f.StorageGroup
+		if startSlot, err = conn.Storage.startSlot(conn.Destination[f.StorageGroup], f.Kind); err != nil {
+			c.fieldErrs[f.StorageGroup] = fmt.Sprintf("%s: %v", f.StorageGroup, err)
+			badStart = true
+		}
+	} else if storageOn {
+		// No group covers this service, so Seerr keeps its own folder. The
+		// root folder select is hidden, and a value left in it is not used.
+	} else if c.dest.RootFolder, err = conn.RootFolder(f.RootFolder); err != nil {
 		c.fieldErrs[f.RootFolder] = fmt.Sprintf("%s: %v", f.RootFolder, err)
 	}
-	wantsOptions := c.dest.ProfileID != nil || c.dest.RootFolder != ""
+	wantsFolder := grouped || c.dest.RootFolder != ""
+	wantsOptions := c.dest.ProfileID != nil || wantsFolder
 	if !checkSeerr || (c.dest.ServerID == nil && !wantsOptions) {
 		return c
 	}
@@ -165,8 +196,8 @@ func checkDestination(ctx context.Context, l *serverLister, conn Connection, f s
 		if c.dest.ProfileID != nil {
 			c.unreachable[f.Profile] = fmt.Sprintf(why, f.Profile)
 		}
-		if c.dest.RootFolder != "" {
-			c.unreachable[f.RootFolder] = fmt.Sprintf(why, f.RootFolder)
+		if wantsFolder {
+			c.unreachable[folderKey] = fmt.Sprintf(why, folderKey)
 		}
 		return c
 	}
@@ -194,8 +225,8 @@ func checkDestination(ctx context.Context, l *serverLister, conn Connection, f s
 		if c.dest.ProfileID != nil {
 			c.fieldErrs[f.Profile] = fmt.Sprintf(why, f.Profile)
 		}
-		if c.dest.RootFolder != "" {
-			c.fieldErrs[f.RootFolder] = fmt.Sprintf(why, f.RootFolder)
+		if wantsFolder {
+			c.fieldErrs[folderKey] = fmt.Sprintf(why, folderKey)
 		}
 		return c
 	}
@@ -206,13 +237,26 @@ func checkDestination(ctx context.Context, l *serverLister, conn Connection, f s
 		if c.dest.ProfileID != nil {
 			c.unreachable[f.Profile] = fmt.Sprintf(why, f.Profile)
 		}
-		if c.dest.RootFolder != "" {
-			c.unreachable[f.RootFolder] = fmt.Sprintf(why, f.RootFolder)
+		if wantsFolder {
+			c.unreachable[folderKey] = fmt.Sprintf(why, folderKey)
 		}
 		return c
 	}
 	if id := c.dest.ProfileID; id != nil && !hasProfile(details.Profiles, *id) {
 		c.fieldErrs[f.Profile] = fmt.Sprintf("%s is set to quality profile id %d, which Seerr's %s server %q does not have", f.Profile, *id, label, target.Name)
+	}
+	if grouped {
+		c.storageErrs = conn.Storage.missingFolders(f.Kind, target.Name, details.RootFolders)
+		if badStart {
+			return c
+		}
+		path, group, err := conn.Storage.pickFolder(f.Kind, startSlot, details.RootFolders)
+		if err != nil {
+			c.full = fmt.Sprintf("%v (Seerr's %s server %q)", err, label, target.Name)
+			return c
+		}
+		c.dest.RootFolder, c.group = path, group.label()
+		return c
 	}
 	if path := c.dest.RootFolder; path != "" && !hasRootFolder(details.RootFolders, path) {
 		c.fieldErrs[f.RootFolder] = fmt.Sprintf("%s is set to %q, which is not a root folder of Seerr's %s server %q", f.RootFolder, path, label, target.Name)
@@ -244,7 +288,8 @@ func hasRootFolder(folders []seerr.RootFolder, path string) bool {
 // and folder lists come from the server picked in conn, or Seerr's default
 // when none (or an unusable one) is picked. A field whose choices cannot be
 // read is left out, so the form falls back to its static "Seerr default"
-// option.
+// option. While storage groups cover a service, its group select is filled
+// instead of its root folder select.
 func destinationOptions(ctx context.Context, l *serverLister, conn Connection) map[string]*pluginv1.ConfigOptionList {
 	out := map[string]*pluginv1.ConfigOptionList{}
 	// The 4K selects are hidden without a separate 4K server.
@@ -291,13 +336,34 @@ func destinationOptions(ctx context.Context, l *serverLister, conn Connection) m
 		out[f.Profile] = &pluginv1.ConfigOptionList{Options: profileOpts}
 
 		folderOpts := []*pluginv1.ConfigOption{{Value: seerrDefault, Label: defaultLabel(target.ActiveDirectory)}}
+		var groupFolderOpts []*pluginv1.ConfigOption
 		for _, rf := range details.RootFolders {
 			if rf.Path == "" || strings.EqualFold(rf.Path, seerrDefault) {
 				continue
 			}
-			folderOpts = append(folderOpts, &pluginv1.ConfigOption{Value: rf.Path, Label: folderLabel(rf)})
+			opt := &pluginv1.ConfigOption{Value: rf.Path, Label: folderLabel(rf)}
+			folderOpts = append(folderOpts, opt)
+			groupFolderOpts = append(groupFolderOpts, opt)
 		}
-		out[f.RootFolder] = &pluginv1.ConfigOptionList{Options: folderOpts}
+		if f.Is4K {
+			// Storage groups hold the folders of the standard servers; a 4K
+			// request keeps its own root folder select.
+			out[f.RootFolder] = &pluginv1.ConfigOptionList{Options: folderOpts}
+			continue
+		}
+		// A storage group's folders are always listed, so groups can be
+		// filled in before they are switched on.
+		for slot := 1; slot <= storageGroupSlots; slot++ {
+			out[groupFoldersKey(slot, f.Kind)] = &pluginv1.ConfigOptionList{Options: groupFolderOpts}
+		}
+		// Only the select in use gets choices. Silo offers a requester or an
+		// approving admin the root folder when it has choices, so it must
+		// have none while storage groups decide the folder.
+		if conn.Storage.manages(f.Kind) {
+			out[f.StorageGroup] = &pluginv1.ConfigOptionList{Options: conn.Storage.groupOptions(f.Kind)}
+		} else if !conn.Storage.Enabled {
+			out[f.RootFolder] = &pluginv1.ConfigOptionList{Options: folderOpts}
+		}
 	}
 	return out
 }
@@ -327,9 +393,22 @@ func folderLabel(rf seerr.RootFolder) string {
 // could not be asked about the others (only when checkSeerr is set).
 func configuredDestinationErrors(ctx context.Context, l *serverLister, conn Connection, checkSeerr bool) (fieldErrs map[string]string, invalid, unreachable []string) {
 	fieldErrs = map[string]string{}
+	for _, key := range slices.Sorted(maps.Keys(conn.Storage.Errs)) {
+		fieldErrs[key] = conn.Storage.Errs[key]
+		invalid = append(invalid, conn.Storage.Errs[key])
+	}
 	// The 4K fields are hidden, and not used, without a separate 4K server.
 	for _, f := range servicesOf(conn) {
 		c := checkDestination(ctx, l, conn, f, checkSeerr)
+		for slot := 1; slot <= storageGroupSlots; slot++ {
+			if m, ok := c.storageErrs[groupFoldersKey(slot, f.Kind)]; ok {
+				fieldErrs[groupFoldersKey(slot, f.Kind)] = m
+				invalid = append(invalid, m)
+			}
+		}
+		if c.full != "" {
+			unreachable = append(unreachable, c.full)
+		}
 		for _, key := range f.keys() {
 			if m, ok := c.fieldErrs[key]; ok {
 				fieldErrs[key] = m

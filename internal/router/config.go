@@ -53,20 +53,28 @@ type serviceFields struct {
 	Server     string
 	Profile    string
 	RootFolder string
+	// StorageGroup is the group select that replaces RootFolder while
+	// storage groups are on. Empty for a 4K service: storage groups hold the
+	// folders of the standard servers only.
+	StorageGroup string
 }
 
 // keys lists the service's config keys in form order.
 func (f serviceFields) keys() []string {
-	return []string{f.Server, f.Profile, f.RootFolder}
+	keys := []string{f.Server, f.Profile, f.RootFolder}
+	if f.StorageGroup != "" {
+		keys = append(keys, f.StorageGroup)
+	}
+	return keys
 }
 
 // services lists every service kind's and tier's destination keys, in form
 // order.
 var services = []serviceFields{
-	{seerr.ServiceRadarr, false, keyRadarrServer, keyRadarrProfile, keyRadarrRootFolder},
-	{seerr.ServiceRadarr, true, keyRadarr4KServer, keyRadarr4KProfile, keyRadarr4KRootFolder},
-	{seerr.ServiceSonarr, false, keySonarrServer, keySonarrProfile, keySonarrRootFolder},
-	{seerr.ServiceSonarr, true, keySonarr4KServer, keySonarr4KProfile, keySonarr4KRootFolder},
+	{seerr.ServiceRadarr, false, keyRadarrServer, keyRadarrProfile, keyRadarrRootFolder, keyRadarrStorageGroup},
+	{seerr.ServiceRadarr, true, keyRadarr4KServer, keyRadarr4KProfile, keyRadarr4KRootFolder, ""},
+	{seerr.ServiceSonarr, false, keySonarrServer, keySonarrProfile, keySonarrRootFolder, keySonarrStorageGroup},
+	{seerr.ServiceSonarr, true, keySonarr4KServer, keySonarr4KProfile, keySonarr4KRootFolder, ""},
 }
 
 // serviceFor returns the destination keys for a Seerr media type
@@ -114,6 +122,10 @@ type Connection struct {
 	// Destination holds the raw destination values, keyed by config key.
 	// Absent, empty or "default" means Seerr's own choice.
 	Destination map[string]any
+
+	// Storage holds the storage groups, which choose the root folder while
+	// they are on.
+	Storage storageConfig
 }
 
 // connectionFromRouter parses a host-supplied RouterConnection. base_url and
@@ -124,6 +136,7 @@ func connectionFromRouter(c *pluginv1.RouterConnection) Connection {
 		BaseURL:     c.GetBaseUrl(),
 		APIKey:      c.GetApiKey(),
 		Destination: map[string]any{},
+		Storage:     storageFromConfig(nil),
 	}
 	if cfg := c.GetConfig(); cfg != nil {
 		m := cfg.AsMap()
@@ -132,6 +145,7 @@ func connectionFromRouter(c *pluginv1.RouterConnection) Connection {
 		}
 		conn.RequireMappedUser, _ = m["require_mapped_user"].(bool)
 		conn.AutoApprove, _ = m["auto_approve"].(bool)
+		conn.Storage = storageFromConfig(m)
 		conn.Supports4K, _ = m[keySupports4K].(bool)
 		for _, f := range services {
 			for _, key := range f.keys() {
